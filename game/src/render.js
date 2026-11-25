@@ -1,6 +1,12 @@
 // Warung Nusantara's painter: every pixel of the night market, drawn on one canvas.
 // The playfield is a fixed 1280x720 logical area; the renderer scales it to the window.
 // Nothing here knows the rules: it only reads the world's state and paints it.
+//
+// The look follows the reference the user picked (Cooking Master): a warm, dense,
+// anime-style kitchen. A generated illustration of the warung's dining room is the
+// backdrop (game/assets/warung-bg.jpg); the counters, the big customers with their
+// speech-bubble orders, the steel ingredient trays and the cooking stations are all
+// drawn over it. If the backdrop has not loaded, a warm gradient stands in.
 
 import {
   CHEF, COOK, DISHES, FIELD, LANE_BACK, PALETTE, FONT, SHIFT_SECONDS, STARS,
@@ -131,68 +137,106 @@ function drawDishBowl(ctx, dishId, x, y, s) {
   ctx.fillRect(x - 10 * u, y + 5 * u, 20 * u, 2 * u);
 }
 
+/** A customer, drawn big (about 140px tall) so the face reads at a glance, like the
+ * reference's diners. Feet at (x, y); the head is up near the speech bubble. */
 function drawCustomer(ctx, order, x, y, now) {
   const c = order.customer;
   const impatient = order.patience < 15;
-  const bob = Math.sin(now * 2 + order.slot) * (impatient ? 3 : 1.5);
+  const bob = Math.sin(now * 2 + order.slot) * (impatient ? 4 : 2);
   ctx.save();
   ctx.translate(x, y + bob);
+  // soft shadow under the feet
+  ctx.fillStyle = 'rgba(20, 12, 6, 0.3)';
+  ctx.beginPath(); ctx.ellipse(0, 2, 36, 7, 0, 0, Math.PI * 2); ctx.fill();
   // body
   ctx.fillStyle = c.shirt;
-  rr(ctx, -16, -6, 32, 30, 8);
+  rr(ctx, -34, -96, 68, 96, 18);
   ctx.fill();
+  // collar + buttons
+  ctx.fillStyle = 'rgba(255,255,255,0.25)';
+  ctx.beginPath(); ctx.moveTo(-10, -96); ctx.lineTo(0, -84); ctx.lineTo(10, -96); ctx.closePath(); ctx.fill();
+  ctx.fillStyle = 'rgba(0,0,0,0.18)';
+  for (let i = 0; i < 3; i += 1) { ctx.beginPath(); ctx.arc(0, -70 + i * 16, 2.2, 0, Math.PI * 2); ctx.fill(); }
   // arms
   ctx.fillStyle = c.skin;
-  ctx.fillRect(-22, -2, 7, 18);
-  ctx.fillRect(15, -2, 7, 18);
+  rr(ctx, -44, -90, 13, 52, 6);
+  ctx.fill();
+  rr(ctx, 31, -90, 13, 52, 6);
+  ctx.fill();
   // head
   ctx.fillStyle = c.skin;
-  ctx.beginPath(); ctx.arc(0, -20, 13, 0, Math.PI * 2); ctx.fill();
-  // hat
+  ctx.beginPath(); ctx.arc(0, -122, 27, 0, Math.PI * 2); ctx.fill();
+  // ears
+  ctx.beginPath(); ctx.arc(-27, -122, 6, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.arc(27, -122, 6, 0, Math.PI * 2); ctx.fill();
+  // hair / hat
   if (c.hat === 'cap') {
     ctx.fillStyle = '#e5534b';
-    ctx.beginPath(); ctx.arc(0, -23, 12, Math.PI, 0); ctx.fill();
-    ctx.fillRect(0, -25, 16, 4);
+    ctx.beginPath(); ctx.arc(0, -128, 26, Math.PI, 0); ctx.fill();
+    ctx.fillRect(0, -132, 34, 8);
   } else if (c.hat === 'songkok') {
     ctx.fillStyle = '#2b2118';
-    ctx.beginPath(); ctx.arc(0, -24, 11, Math.PI, 0); ctx.fill();
-    ctx.fillRect(-11, -26, 22, 5);
+    ctx.beginPath(); ctx.arc(0, -130, 25, Math.PI, 0); ctx.fill();
+    ctx.fillRect(-25, -134, 50, 9);
   } else if (c.hat === 'bandana') {
     ctx.fillStyle = '#f2c94c';
-    ctx.beginPath(); ctx.arc(0, -23, 12.5, Math.PI * 1.05, Math.PI * 1.95); ctx.fill();
+    ctx.beginPath(); ctx.arc(0, -126, 27, Math.PI * 1.05, Math.PI * 1.95); ctx.fill();
+    ctx.fillRect(-27, -140, 8, 22);
+    ctx.fillRect(19, -140, 8, 22);
   } else {
     ctx.fillStyle = '#2b2118';
-    ctx.beginPath(); ctx.arc(0, -24, 12, Math.PI, 0); ctx.fill();
+    ctx.beginPath(); ctx.arc(0, -128, 27, Math.PI, 0); ctx.fill();
+    ctx.beginPath(); ctx.arc(-24, -112, 8, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(24, -112, 8, 0, Math.PI * 2); ctx.fill();
   }
-  // eyes + mouth
+  // eyes
   ctx.fillStyle = '#2b2118';
-  ctx.beginPath(); ctx.arc(-4.5, -20, 1.6, 0, Math.PI * 2); ctx.fill();
-  ctx.beginPath(); ctx.arc(4.5, -20, 1.6, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.arc(-10, -122, 3.4, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.arc(10, -122, 3.4, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#fff';
+  ctx.beginPath(); ctx.arc(-9, -123.5, 1.2, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.arc(11, -123.5, 1.2, 0, Math.PI * 2); ctx.fill();
+  // blush
+  ctx.fillStyle = 'rgba(229, 83, 75, 0.35)';
+  ctx.beginPath(); ctx.arc(-18, -112, 5, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.arc(18, -112, 5, 0, Math.PI * 2); ctx.fill();
+  // mouth: smile, or a flat line when the order is about to expire
   ctx.strokeStyle = '#2b2118';
-  ctx.lineWidth = 1.6;
+  ctx.lineWidth = 2.4;
   ctx.beginPath();
-  if (impatient) { ctx.moveTo(-4, -13); ctx.lineTo(4, -13); }
-  else { ctx.arc(0, -15, 4, 0.15 * Math.PI, 0.85 * Math.PI); }
+  if (impatient) { ctx.moveTo(-8, -108); ctx.lineTo(8, -108); }
+  else { ctx.arc(0, -114, 8, 0.15 * Math.PI, 0.85 * Math.PI); }
   ctx.stroke();
-  if (impatient) text(ctx, '!', 20, -34, 20, '#e5534b');
+  if (impatient) text(ctx, '!', 38, -158, 28, '#e5534b');
   ctx.restore();
 }
 
+/** An order as a speech bubble above the customer's head, like the reference: the
+ * dish in a bowl, its name and price, and a patience bar along the bottom. */
 function drawTicket(ctx, order, x, y, w, h, now) {
   const frac = Math.max(0, order.patience / order.maxPatience);
   const urgent = frac < 0.27;
   const shake = urgent ? Math.sin(now * 14) * 2 : 0;
   ctx.save();
   ctx.translate(shake, 0);
+  // tail down to the customer's head
   ctx.fillStyle = urgent ? '#ffe1de' : PALETTE.ticket;
-  rr(ctx, x, y, w, h, 8);
+  ctx.beginPath();
+  ctx.moveTo(x + w / 2 - 12, y + h - 2);
+  ctx.lineTo(x + w / 2 + 12, y + h - 2);
+  ctx.lineTo(x + w / 2, y + h + 16);
+  ctx.closePath();
+  ctx.fill();
+  // bubble
+  ctx.fillStyle = urgent ? '#ffe1de' : PALETTE.ticket;
+  rr(ctx, x, y, w, h, 14);
   ctx.fill();
   ctx.strokeStyle = urgent ? '#e5534b' : '#d9c9a8';
   ctx.lineWidth = urgent ? 3 : 2;
   ctx.stroke();
   drawDishBowl(ctx, order.dish, x + 30, y + 26, 34);
-  text(ctx, DISHES[order.dish].name, x + 58, y + 18, 17, PALETTE.ticketInk, 'left');
-  text(ctx, `Rp${DISHES[order.dish].price}rb`, x + 58, y + 40, 14, '#8a6d3b', 'left', '600');
+  text(ctx, DISHES[order.dish].name, x + 56, y + 20, 16, PALETTE.ticketInk, 'left');
+  text(ctx, `Rp${DISHES[order.dish].price}rb`, x + 56, y + 42, 14, '#8a6d3b', 'left', '600');
   // patience bar
   const bw = w - 20;
   ctx.fillStyle = '#e3d9c2';
@@ -203,6 +247,8 @@ function drawTicket(ctx, order, x, y, w, h, now) {
   ctx.restore();
 }
 
+/** A station's wooden counter block, with a warm highlight on top and a pulsing gold
+ * ring when the chef stands near it on the right lane. */
 function drawStationBase(ctx, def, highlight, now) {
   const { x, y, w, h } = def;
   ctx.fillStyle = PALETTE.counter;
@@ -217,7 +263,31 @@ function drawStationBase(ctx, def, highlight, now) {
     rr(ctx, x - w / 2 - 4, y - h / 2 - 4, w + 8, h + 8, 12);
     ctx.stroke();
   }
-  text(ctx, def.label, x, y + h / 2 + 16, 13, PALETTE.muted, 'center', '600');
+  // The label sits on a dark pill: the dining-room cloth behind it is too busy for bare text.
+  ctx.font = `600 13px ${FONT}`;
+  const lw = ctx.measureText(def.label).width + 18;
+  ctx.fillStyle = 'rgba(20, 16, 10, 0.65)';
+  rr(ctx, x - lw / 2, y + h / 2 + 7, lw, 18, 9);
+  ctx.fill();
+  text(ctx, def.label, x, y + h / 2 + 16, 13, '#f7f1e3', 'center', '600');
+}
+
+/** A steel ingredient tray on a bin: a silver well with a big pile of the ingredient. */
+function drawBinTray(ctx, def, now) {
+  const { x, y, w, h } = def;
+  ctx.fillStyle = '#9a9aa2';
+  rr(ctx, x - w / 2, y - h / 2, w, h, 10);
+  ctx.fill();
+  ctx.fillStyle = '#c9c9d1';
+  rr(ctx, x - w / 2 + 4, y - h / 2 + 4, w - 8, h - 8, 8);
+  ctx.fill();
+  ctx.fillStyle = '#7d7d88';
+  rr(ctx, x - w / 2 + 8, y - h / 2 + 8, w - 16, h - 30, 6);
+  ctx.fill();
+  // a heaped pile of the ingredient, bigger than the icon alone
+  drawItemIcon(ctx, def.gives, x, y - 4, 58);
+  drawItemIcon(ctx, def.gives, x - 24, y + 8, 30);
+  drawItemIcon(ctx, def.gives, x + 24, y + 8, 30);
 }
 
 function drawTimingBar(ctx, x, y, w, progress, cook) {
@@ -258,7 +328,7 @@ function hintFor(station, chef, plateSlots) {
   return 'Memasak…';
 }
 
-export function createRenderer(canvas) {
+export function createRenderer(canvas, bg) {
   const ctx = canvas.getContext('2d');
   let scale = 1;
   let offsetX = 0;
@@ -277,51 +347,61 @@ export function createRenderer(canvas) {
 
   function drawChef(chef, state, now) {
     const moving = chef.targetX !== null;
-    const bob = moving ? Math.abs(Math.sin(now * 10)) * 4 : Math.sin(now * 2) * 1.5;
+    const bob = moving ? Math.abs(Math.sin(now * 10)) * 5 : Math.sin(now * 2) * 2;
     const y = (chef.lane === LANE_BACK ? CHEF.laneBack : CHEF.laneFront) - bob;
     const x = chef.x;
-    const hop = chef.hop > 0 ? Math.sin((0.18 - chef.hop) / 0.18 * Math.PI) * 14 : 0;
+    const hop = chef.hop > 0 ? Math.sin((0.18 - chef.hop) / 0.18 * Math.PI) * 16 : 0;
     ctx.save();
     ctx.translate(x, y - hop);
+    // soft shadow
+    ctx.fillStyle = 'rgba(20, 12, 6, 0.3)';
+    ctx.beginPath(); ctx.ellipse(0, 2, 30, 6, 0, 0, Math.PI * 2); ctx.fill();
     // legs
     ctx.fillStyle = '#2b3a55';
-    const step = moving ? Math.sin(now * 10) * 6 : 0;
-    ctx.fillRect(-10 + step, -26, 8, 26);
-    ctx.fillRect(2 - step, -26, 8, 26);
+    const step = moving ? Math.sin(now * 10) * 8 : 0;
+    ctx.fillRect(-12 + step, -32, 10, 32);
+    ctx.fillRect(2 - step, -32, 10, 32);
     // body + apron
     ctx.fillStyle = '#f5ead2';
-    rr(ctx, -17, -58, 34, 36, 10);
+    rr(ctx, -21, -72, 42, 44, 12);
     ctx.fill();
     ctx.fillStyle = '#c0392b';
-    rr(ctx, -13, -58, 26, 30, 8);
+    rr(ctx, -16, -72, 32, 37, 10);
     ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,0.3)';
+    ctx.fillRect(-16, -72, 32, 4);
     // arms
     ctx.fillStyle = '#f2c9a0';
-    ctx.fillRect(-22, -52, 7, 22);
-    ctx.fillRect(15, -52, 7, 22);
+    rr(ctx, -27, -64, 9, 28, 4);
+    ctx.fill();
+    rr(ctx, 18, -64, 9, 28, 4);
+    ctx.fill();
     // head
     ctx.fillStyle = '#f2c9a0';
-    ctx.beginPath(); ctx.arc(0, -70, 14, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(0, -86, 17, 0, Math.PI * 2); ctx.fill();
     // chef hat
     ctx.fillStyle = '#ffffff';
-    ctx.beginPath(); ctx.arc(-7, -82, 8, 0, Math.PI * 2); ctx.fill();
-    ctx.beginPath(); ctx.arc(7, -82, 8, 0, Math.PI * 2); ctx.fill();
-    ctx.beginPath(); ctx.arc(0, -86, 9, 0, Math.PI * 2); ctx.fill();
-    ctx.fillRect(-13, -84, 26, 6);
+    ctx.beginPath(); ctx.arc(-9, -100, 10, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(9, -100, 10, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(0, -105, 11, 0, Math.PI * 2); ctx.fill();
+    ctx.fillRect(-16, -102, 32, 7);
     // face
     ctx.fillStyle = '#2b2118';
-    ctx.beginPath(); ctx.arc(-5 * chef.dir, -70, 1.8, 0, Math.PI * 2); ctx.fill();
-    ctx.beginPath(); ctx.arc(5 * chef.dir, -70, 1.8, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(-6 * chef.dir, -86, 2.2, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(6 * chef.dir, -86, 2.2, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = 'rgba(229, 83, 75, 0.35)';
+    ctx.beginPath(); ctx.arc(-11, -79, 3.5, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(11, -79, 3.5, 0, Math.PI * 2); ctx.fill();
     ctx.strokeStyle = '#2b2118';
-    ctx.lineWidth = 1.6;
-    ctx.beginPath(); ctx.arc(2 * chef.dir, -64, 4, 0.15 * Math.PI, 0.85 * Math.PI); ctx.stroke();
+    ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(2 * chef.dir, -79, 5, 0.15 * Math.PI, 0.85 * Math.PI); ctx.stroke();
     // carried item above the head
     if (chef.carry) {
       ctx.fillStyle = 'rgba(20, 28, 51, 0.85)';
-      rr(ctx, -26, -128, 52, 34, 10);
+      rr(ctx, -30, -156, 60, 38, 12);
       ctx.fill();
-      if (DISHES[chef.carry]) drawDishBowl(ctx, chef.carry, 0, -111, 30);
-      else drawItemIcon(ctx, chef.carry, 0, -111, 26);
+      if (DISHES[chef.carry]) drawDishBowl(ctx, chef.carry, 0, -137, 32);
+      else drawItemIcon(ctx, chef.carry, 0, -137, 28);
     }
     ctx.restore();
   }
@@ -333,20 +413,20 @@ export function createRenderer(canvas) {
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     ctx.setTransform(scale, 0, 0, scale, offsetX, offsetY);
 
-    // Night sky + stars.
-    const sky = ctx.createLinearGradient(0, 0, 0, 720);
-    sky.addColorStop(0, PALETTE.sky);
-    sky.addColorStop(1, PALETTE.skyLow);
-    ctx.fillStyle = sky;
-    ctx.fillRect(0, 0, FIELD.width, FIELD.height);
-    ctx.fillStyle = '#f7f1e3';
-    for (let i = 0; i < 26; i += 1) {
-      const sx = (i * 173 + 41) % 1280;
-      const sy = (i * 97 + 13) % 120 + 8;
-      ctx.globalAlpha = 0.25 + 0.45 * Math.abs(Math.sin(now * 0.7 + i));
-      ctx.beginPath(); ctx.arc(sx, sy, 1.6, 0, Math.PI * 2); ctx.fill();
+    // Backdrop: the warung's dining room. Until it loads, a warm gradient stands in.
+    if (bg && bg.complete && bg.naturalWidth > 0) {
+      ctx.drawImage(bg, 0, 0, FIELD.width, FIELD.height);
+    } else {
+      const sky = ctx.createLinearGradient(0, 0, 0, 720);
+      sky.addColorStop(0, '#3a2a1c');
+      sky.addColorStop(0.55, '#2b2118');
+      sky.addColorStop(1, '#241a12');
+      ctx.fillStyle = sky;
+      ctx.fillRect(0, 0, FIELD.width, FIELD.height);
     }
-    ctx.globalAlpha = 1;
+    // A gentle dark veil over the dining room so the counters and tickets read clearly.
+    ctx.fillStyle = 'rgba(20, 12, 6, 0.18)';
+    ctx.fillRect(0, 0, FIELD.width, 300);
 
     // Awning: red and cream stripes across the top.
     for (let i = 0; i < 16; i += 1) {
@@ -369,42 +449,68 @@ export function createRenderer(canvas) {
     }
 
     // Stall sign + HUD.
-    ctx.fillStyle = 'rgba(20, 16, 10, 0.55)';
-    rr(ctx, 330, 66, 620, 40, 10);
-    ctx.fill();
-    text(ctx, 'WARUNG NUSANTARA', 640, 87, 26, '#ffd766');
     const timeLeft = Math.max(0, SHIFT_SECONDS - state.elapsed);
     const mm = Math.floor(timeLeft / 60);
     const ss = Math.floor(timeLeft % 60);
-    text(ctx, `${mm}:${String(ss).padStart(2, '0')}`, 60, 88, 26, timeLeft < 30 ? '#ff8a7a' : PALETTE.text, 'left');
-    text(ctx, `Rp${state.coins}rb`, 1220, 88, 26, PALETTE.gold, 'right');
+    // timer: a little clock + the time, top left
+    ctx.fillStyle = 'rgba(20, 16, 10, 0.55)';
+    rr(ctx, 40, 50, 128, 40, 10);
+    ctx.fill();
+    ctx.strokeStyle = timeLeft < 30 ? '#ff8a7a' : PALETTE.text;
+    ctx.lineWidth = 2.5;
+    ctx.beginPath(); ctx.arc(62, 70, 11, 0, Math.PI * 2); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(62, 70); ctx.lineTo(62, 62); ctx.moveTo(62, 70); ctx.lineTo(68, 70); ctx.stroke();
+    text(ctx, `${mm}:${String(ss).padStart(2, '0')}`, 80, 71, 24, timeLeft < 30 ? '#ff8a7a' : PALETTE.text, 'left');
+    // stall sign, then hearts and coins in their own pills (the sign is narrower now
+    // so the hearts fit between it and the coins)
+    ctx.fillStyle = 'rgba(20, 16, 10, 0.55)';
+    rr(ctx, 330, 50, 600, 40, 10);
+    ctx.fill();
+    text(ctx, 'WARUNG NUSANTARA', 630, 71, 24, '#ffd766');
+    ctx.fillStyle = 'rgba(20, 16, 10, 0.55)';
+    rr(ctx, 950, 50, 80, 40, 10);
+    ctx.fill();
     for (let i = 0; i < 3; i += 1) {
-      ctx.fillStyle = i < state.lives ? '#e5534b' : '#4a2c15';
+      ctx.fillStyle = i < state.lives ? '#e5534b' : 'rgba(74, 44, 21, 0.7)';
       ctx.beginPath();
-      const hx = 1090 + i * 26;
-      const hy = 88;
+      const hx = 966 + i * 22;
+      const hy = 70;
       ctx.moveTo(hx, hy + 6);
       ctx.bezierCurveTo(hx - 10, hy - 4, hx - 5, hy - 12, hx, hy - 5);
       ctx.bezierCurveTo(hx + 5, hy - 12, hx + 10, hy - 4, hx, hy + 6);
       ctx.fill();
     }
-    if (state.combo > 1) text(ctx, `KOMBO x${state.combo.toFixed(1)}`, 640, 122, 18, '#ffd766');
+    // coins, top right
+    ctx.fillStyle = 'rgba(20, 16, 10, 0.55)';
+    rr(ctx, 1050, 50, 190, 40, 10);
+    ctx.fill();
+    ctx.fillStyle = PALETTE.gold;
+    ctx.beginPath(); ctx.arc(1072, 70, 11, 0, Math.PI * 2); ctx.fill();
+    text(ctx, '$', 1072, 71, 15, '#7a5a00');
+    text(ctx, `Rp${state.coins}rb`, 1090, 71, 22, PALETTE.gold, 'left');
+    // combo pill, under the coins (clear of the rightmost bubble)
+    if (state.combo > 1) {
+      ctx.fillStyle = 'rgba(20, 16, 10, 0.55)';
+      rr(ctx, 1140, 98, 100, 28, 14);
+      ctx.fill();
+      text(ctx, `KOMBO x${state.combo.toFixed(1)}`, 1190, 113, 16, '#ffd766');
+    }
 
-    // Customers + tickets. The combo line sits just under the sign, so the tickets start
-    // below it (y 128) instead of under it.
+    // Customers + their speech-bubble orders.
     for (const order of state.orders) {
-      drawTicket(ctx, order, order.x - 92, 128, 184, 74, now);
-      drawCustomer(ctx, order, order.x, 222, now);
+      drawTicket(ctx, order, order.x - 92, 96, 184, 72, now);
+      drawCustomer(ctx, order, order.x, 300, now);
     }
 
     // Back counter (ingredient bins + serve hatch).
     ctx.fillStyle = PALETTE.woodDark;
-    ctx.fillRect(40, 250, 1200, 14);
+    ctx.fillRect(40, 296, 1200, 14);
     for (const s of state.stations) {
       if (s.def.lane !== LANE_BACK) continue;
       const near = screen === SCREEN_PLAY && state.chef.lane === LANE_BACK
         && Math.abs(s.def.x - state.chef.x) <= 96;
       if (s.def.kind === 'serve') {
+        // serve hatch: a warm yellow hatch with a little service bell on top
         ctx.fillStyle = '#3a2c1e';
         rr(ctx, s.def.x - 60, s.def.y - 44, 120, 88, 10);
         ctx.fill();
@@ -413,6 +519,9 @@ export function createRenderer(canvas) {
         ctx.fill();
         text(ctx, 'ANTAR', s.def.x, s.def.y - 14, 18, '#2b2118');
         text(ctx, 'pesanan', s.def.x, s.def.y + 10, 13, '#5a4632', 'center', '600');
+        ctx.fillStyle = '#c9c9d1';
+        ctx.beginPath(); ctx.arc(s.def.x, s.def.y - 52, 12, Math.PI, 0); ctx.fill();
+        ctx.fillRect(s.def.x - 12, s.def.y - 52, 24, 4);
         if (near) {
           ctx.strokeStyle = `rgba(242, 201, 76, ${0.55 + 0.35 * Math.sin(now * 5)})`;
           ctx.lineWidth = 4;
@@ -422,12 +531,12 @@ export function createRenderer(canvas) {
         continue;
       }
       drawStationBase(ctx, s.def, near, now);
-      drawItemIcon(ctx, s.def.gives, s.def.x, s.def.y - 6, 44);
+      drawBinTray(ctx, s.def, now);
     }
 
     // Front counter (cooking stations).
     ctx.fillStyle = PALETTE.woodDark;
-    ctx.fillRect(40, 424, 1200, 14);
+    ctx.fillRect(40, 416, 1200, 14);
     for (const s of state.stations) {
       if (s.def.lane !== 'front') continue;
       const near = screen === SCREEN_PLAY && state.chef.lane === 'front'
@@ -435,78 +544,106 @@ export function createRenderer(canvas) {
       drawStationBase(ctx, s.def, near, now);
       const { x, y } = s.def;
       if (s.def.kind === 'chop') {
+        // wooden board + knife
         ctx.fillStyle = '#c9a06a';
-        rr(ctx, x - 52, y - 18, 104, 12, 6);
+        rr(ctx, x - 56, y - 18, 112, 14, 7);
         ctx.fill();
-        if (s.item) drawItemIcon(ctx, s.item, x - 20, y - 24, 30);
+        ctx.fillStyle = '#a87c4a';
+        ctx.fillRect(x - 56, y - 8, 112, 4);
+        ctx.save();
+        ctx.translate(x + 44, y - 26);
+        ctx.rotate(0.5);
+        ctx.fillStyle = '#c9c9d1';
+        ctx.fillRect(-4, -18, 8, 22);
+        ctx.fillStyle = '#6b4423';
+        ctx.fillRect(-4, 4, 8, 12);
+        ctx.restore();
+        if (s.item) drawItemIcon(ctx, s.item, x - 18, y - 26, 32);
         if (s.item && !s.done) {
           ctx.fillStyle = '#1a1210';
-          rr(ctx, x - 40, y - 52, 80, 8, 4);
+          rr(ctx, x - 44, y - 54, 88, 8, 4);
           ctx.fill();
           ctx.fillStyle = '#7dc383';
-          rr(ctx, x - 40, y - 52, 80 * Math.min(1, s.progress / COOK.chop.seconds), 8, 4);
+          rr(ctx, x - 44, y - 54, 88 * Math.min(1, s.progress / COOK.chop.seconds), 8, 4);
           ctx.fill();
         }
-        if (s.done) text(ctx, 'Siap!', x + 28, y - 24, 14, '#7dc383');
+        if (s.done) text(ctx, 'Siap!', x + 30, y - 26, 14, '#7dc383');
       } else if (s.def.kind === 'wok') {
-        // fire
+        // fire under the wok, wide enough to lick out from behind the bowl
         const flick = Math.sin(now * 9 + x) * 3;
         ctx.fillStyle = '#e8821e';
         ctx.beginPath();
-        ctx.moveTo(x - 26, y + 8);
-        ctx.quadraticCurveTo(x - 10, y - 26 - flick, x, y - 8);
-        ctx.quadraticCurveTo(x + 10, y - 26 - flick, x + 26, y + 8);
+        ctx.moveTo(x - 40, y + 10);
+        ctx.quadraticCurveTo(x - 16, y - 30 - flick, x, y - 10);
+        ctx.quadraticCurveTo(x + 16, y - 30 - flick, x + 40, y + 10);
+        ctx.closePath();
+        ctx.fill();
+        ctx.fillStyle = '#f2c94c';
+        ctx.beginPath();
+        ctx.moveTo(x - 22, y + 10);
+        ctx.quadraticCurveTo(x - 8, y - 14 - flick, x, y - 2);
+        ctx.quadraticCurveTo(x + 8, y - 14 - flick, x + 22, y + 10);
         ctx.closePath();
         ctx.fill();
         ctx.fillStyle = '#2b2118';
-        ctx.beginPath(); ctx.arc(x, y - 2, 30, 0, Math.PI); ctx.fill();
+        ctx.beginPath(); ctx.arc(x, y - 2, 32, 0, Math.PI); ctx.fill();
         ctx.fillStyle = '#4a4a52';
-        ctx.fillRect(x - 34, y - 6, 68, 6);
-        if (s.item) drawItemIcon(ctx, s.item, x, y - 14, 30);
-        if (s.item) drawTimingBar(ctx, x, y - 48, 110, s.progress, COOK.wok);
-        if (s.burnt) text(ctx, 'GOSONG!', x, y - 62, 14, '#ff8a7a');
-        else if (s.done) text(ctx, 'Angkat!', x, y - 62, 14, '#7dc383');
+        ctx.fillRect(x - 36, y - 6, 72, 6);
+        if (s.item) drawItemIcon(ctx, s.item, x, y - 16, 32);
+        if (s.item) drawTimingBar(ctx, x, y - 50, 110, s.progress, COOK.wok);
+        if (s.burnt) text(ctx, 'GOSONG!', x, y - 64, 14, '#ff8a7a');
+        else if (s.done) text(ctx, 'Angkat!', x, y - 64, 14, '#7dc383');
         // steam
         ctx.fillStyle = 'rgba(247, 241, 227, 0.35)';
         for (let i = 0; i < 3; i += 1) {
-          const sy = y - 30 - ((now * 22 + i * 18) % 54);
+          const sy = y - 32 - ((now * 22 + i * 18) % 54);
           ctx.beginPath(); ctx.arc(x - 12 + i * 12 + Math.sin(now * 3 + i) * 3, sy, 5, 0, Math.PI * 2); ctx.fill();
         }
       } else if (s.def.kind === 'grill') {
+        // glowing coals + grate
+        const glow = 0.5 + 0.3 * Math.sin(now * 6 + x);
+        ctx.fillStyle = `rgba(232, 130, 30, ${glow})`;
+        ctx.fillRect(x - 52, y - 12, 104, 12);
         ctx.fillStyle = '#3a3a40';
-        ctx.fillRect(x - 56, y - 10, 112, 10);
-        ctx.strokeStyle = '#6b6b72';
+        ctx.fillRect(x - 56, y - 12, 112, 10);
+        ctx.strokeStyle = '#8b8b93';
         ctx.lineWidth = 2;
         for (let i = -4; i <= 4; i += 1) {
-          ctx.beginPath(); ctx.moveTo(x + i * 12, y - 10); ctx.lineTo(x + i * 12, y); ctx.stroke();
+          ctx.beginPath(); ctx.moveTo(x + i * 12, y - 12); ctx.lineTo(x + i * 12, y - 2); ctx.stroke();
         }
-        if (s.item) drawItemIcon(ctx, s.output || 'sate', x, y - 22, 32);
-        if (s.item) drawTimingBar(ctx, x, y - 52, 110, s.progress, COOK.grill);
-        if (s.burnt) text(ctx, 'GOSONG!', x, y - 66, 14, '#ff8a7a');
-        else if (s.done) text(ctx, 'Angkat!', x, y - 66, 14, '#7dc383');
+        if (s.item) drawItemIcon(ctx, s.output || 'sate', x, y - 26, 34);
+        if (s.item) drawTimingBar(ctx, x, y - 56, 110, s.progress, COOK.grill);
+        if (s.burnt) text(ctx, 'GOSONG!', x, y - 70, 14, '#ff8a7a');
+        else if (s.done) text(ctx, 'Angkat!', x, y - 70, 14, '#7dc383');
         ctx.fillStyle = 'rgba(139, 147, 163, 0.4)';
         for (let i = 0; i < 2; i += 1) {
-          const sy = y - 34 - ((now * 16 + i * 26) % 44);
+          const sy = y - 38 - ((now * 16 + i * 26) % 44);
           ctx.beginPath(); ctx.arc(x - 8 + i * 16, sy, 6, 0, Math.PI * 2); ctx.fill();
         }
       } else if (s.def.kind === 'plate') {
         for (let i = 0; i < 3; i += 1) {
           const px = x - 72 + i * 72;
-          ctx.fillStyle = '#e8e2d4';
-          ctx.beginPath(); ctx.arc(px, y - 6, 26, 0, Math.PI * 2); ctx.fill();
-          ctx.fillStyle = '#c9c2b2';
-          ctx.beginPath(); ctx.arc(px, y - 6, 17, 0, Math.PI * 2); ctx.fill();
+          ctx.fillStyle = '#f2ede2';
+          ctx.beginPath(); ctx.arc(px, y - 6, 28, 0, Math.PI * 2); ctx.fill();
+          ctx.fillStyle = '#d9d2c2';
+          ctx.beginPath(); ctx.arc(px, y - 6, 19, 0, Math.PI * 2); ctx.fill();
+          ctx.fillStyle = '#ffffff';
+          ctx.beginPath(); ctx.arc(px, y - 6, 15, 0, Math.PI * 2); ctx.fill();
           const slot = state.plateSlots[i];
           if (slot) {
-            if (slot.dish) drawDishBowl(ctx, slot.dish, px, y - 8, 34);
+            if (slot.dish) drawDishBowl(ctx, slot.dish, px, y - 8, 36);
             else slot.components.forEach((c, j) => drawItemIcon(ctx, c, px - 10 + j * 20, y - 12, 22));
           }
         }
         const clean = 3 - state.plateSlots.filter(Boolean).length - state.dirtyPlates;
-        text(ctx, `Piring bersih: ${Math.max(0, clean)}`, x, y + 34, 12, PALETTE.muted, 'center', '600');
+        text(ctx, `Piring bersih: ${Math.max(0, clean)}`, x, y + 34, 12, '#f7f1e3', 'center', '600');
       } else if (s.def.kind === 'sink') {
+        // steel basin + blue water + bubbles
+        ctx.fillStyle = '#8a8a92';
+        rr(ctx, x - 48, y - 20, 96, 32, 8);
+        ctx.fill();
         ctx.fillStyle = '#3f6fb5';
-        rr(ctx, x - 44, y - 16, 88, 26, 8);
+        rr(ctx, x - 42, y - 14, 84, 22, 6);
         ctx.fill();
         ctx.fillStyle = '#7fb3e8';
         for (let i = 0; i < 4; i += 1) {
@@ -514,57 +651,81 @@ export function createRenderer(canvas) {
           const by = y - 4 - ((now * 10 + i * 7) % 12);
           ctx.beginPath(); ctx.arc(bx, by, 3, 0, Math.PI * 2); ctx.fill();
         }
+        // tap
+        ctx.strokeStyle = '#c9c9d1';
+        ctx.lineWidth = 5;
+        ctx.beginPath(); ctx.moveTo(x + 20, y - 34); ctx.lineTo(x + 20, y - 20); ctx.stroke();
         if (s.washing) {
           ctx.fillStyle = '#1a1210';
-          rr(ctx, x - 40, y - 44, 80, 8, 4);
+          rr(ctx, x - 40, y - 48, 80, 8, 4);
           ctx.fill();
           ctx.fillStyle = '#7fb3e8';
-          rr(ctx, x - 40, y - 44, 80 * Math.min(1, s.progress / 2), 8, 4);
+          rr(ctx, x - 40, y - 48, 80 * Math.min(1, s.progress / 2), 8, 4);
           ctx.fill();
         }
         if (state.dirtyPlates > 0) text(ctx, `Kotor: ${state.dirtyPlates}`, x, y + 34, 12, '#ff8a7a', 'center', '600');
       } else if (s.def.kind === 'trash') {
         ctx.fillStyle = '#4a4a52';
-        rr(ctx, x - 26, y - 18, 52, 36, 6);
+        rr(ctx, x - 28, y - 20, 56, 40, 6);
         ctx.fill();
         ctx.fillStyle = '#33333a';
-        rr(ctx, x - 30, y - 24, 60, 10, 5);
+        rr(ctx, x - 32, y - 26, 64, 10, 5);
         ctx.fill();
+        ctx.fillStyle = '#6b6b72';
+        ctx.fillRect(x - 4, y - 30, 8, 6);
       }
     }
 
-    // Floor: a woven mat along the chef's lane, a sack of rice and a crate of chillies.
-    ctx.fillStyle = PALETTE.floor;
-    ctx.fillRect(0, 470, FIELD.width, 250);
-    ctx.fillStyle = PALETTE.floorLine;
-    for (let i = 0; i < 8; i += 1) ctx.fillRect(0, 540 + i * 22, FIELD.width, 2);
+    // Floor dressing on the backdrop's wooden floor: a woven mat, a rice sack, sauce
+    // bottles, a chalkboard menu and a crate of chillies.
     ctx.fillStyle = '#7a3b2e';
-    rr(ctx, 60, 636, 1160, 44, 10);
+    rr(ctx, 60, 640, 1160, 44, 10);
     ctx.fill();
     ctx.fillStyle = '#93503f';
-    for (let i = 0; i < 10; i += 1) ctx.fillRect(120 + i * 116, 652, 56, 6);
+    for (let i = 0; i < 10; i += 1) ctx.fillRect(120 + i * 116, 656, 56, 6);
     // rice sack
     ctx.fillStyle = '#d9c9a8';
     ctx.beginPath();
-    ctx.moveTo(76, 700);
-    ctx.quadraticCurveTo(70, 648, 100, 640);
-    ctx.quadraticCurveTo(130, 648, 124, 700);
+    ctx.moveTo(76, 704);
+    ctx.quadraticCurveTo(70, 652, 100, 644);
+    ctx.quadraticCurveTo(130, 652, 124, 704);
     ctx.closePath();
     ctx.fill();
     ctx.fillStyle = '#b8a88f';
-    ctx.fillRect(88, 636, 24, 10);
-    text(ctx, 'BERAS', 100, 676, 11, '#5a4632', 'center', '600');
+    ctx.fillRect(88, 640, 24, 10);
+    text(ctx, 'BERAS', 100, 680, 11, '#5a4632', 'center', '600');
+    // sauce bottles
+    for (let i = 0; i < 2; i += 1) {
+      const bx = 150 + i * 30;
+      ctx.fillStyle = i === 0 ? '#c0392b' : '#f2c94c';
+      rr(ctx, bx, 668, 20, 36, 6);
+      ctx.fill();
+      ctx.fillStyle = '#f5ead2';
+      ctx.fillRect(bx + 6, 660, 8, 8);
+    }
+    // chalkboard menu on the right
+    ctx.fillStyle = '#2b2118';
+    rr(ctx, 1060, 540, 150, 96, 8);
+    ctx.fill();
+    ctx.strokeStyle = '#8a5a2b';
+    ctx.lineWidth = 4;
+    rr(ctx, 1060, 540, 150, 96, 8);
+    ctx.stroke();
+    text(ctx, 'MENU', 1135, 558, 15, '#ffd766');
+    text(ctx, 'Nasi Goreng 15', 1135, 580, 12, '#f7f1e3', 'center', '500');
+    text(ctx, 'Mie Ayam 12', 1135, 598, 12, '#f7f1e3', 'center', '500');
+    text(ctx, 'Sate Ayam 18', 1135, 616, 12, '#f7f1e3', 'center', '500');
     // chilli crate
     ctx.fillStyle = '#6b4423';
-    rr(ctx, 1150, 656, 76, 44, 6);
+    rr(ctx, 1150, 660, 76, 44, 6);
     ctx.fill();
     ctx.fillStyle = '#e5534b';
     for (let i = 0; i < 5; i += 1) {
-      ctx.beginPath(); ctx.arc(1162 + i * 13, 652, 5, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(1162 + i * 13, 656, 5, 0, Math.PI * 2); ctx.fill();
     }
     ctx.fillStyle = '#7dc383';
-    ctx.fillRect(1158, 644, 4, 6);
-    ctx.fillRect(1197, 644, 4, 6);
+    ctx.fillRect(1158, 648, 4, 6);
+    ctx.fillRect(1197, 648, 4, 6);
 
     // The chef, and the station hint.
     if (screen === SCREEN_PLAY || screen === SCREEN_PAUSED || screen === SCREEN_TITLE) drawChef(state.chef, state, now);
@@ -576,10 +737,11 @@ export function createRenderer(canvas) {
         if (hint) {
           ctx.font = `700 16px ${FONT}`;
           const w = ctx.measureText(`E — ${hint}`).width + 40;
-          ctx.fillStyle = 'rgba(20, 16, 10, 0.7)';
-          rr(ctx, state.chef.x - w / 2, 618, w, 30, 15);
+          const hx = Math.max(8, Math.min(FIELD.width - w - 8, state.chef.x - w / 2));
+          ctx.fillStyle = 'rgba(20, 16, 10, 0.72)';
+          rr(ctx, hx, 600, w, 30, 15);
           ctx.fill();
-          text(ctx, `E — ${hint}`, state.chef.x, 634, 16, '#ffd766');
+          text(ctx, `E — ${hint}`, hx + w / 2, 616, 16, '#ffd766');
         }
       }
     }
@@ -590,21 +752,21 @@ export function createRenderer(canvas) {
       ctx.font = `700 16px ${FONT}`;
       const w = ctx.measureText(state.message).width + 44;
       ctx.fillStyle = 'rgba(20, 16, 10, 0.8)';
-      rr(ctx, 640 - w / 2, 128, w, 32, 16);
+      rr(ctx, 640 - w / 2, 660, w, 32, 16);
       ctx.fill();
-      text(ctx, state.message, 640, 145, 16, PALETTE.text);
+      text(ctx, state.message, 640, 677, 16, PALETTE.text);
       ctx.globalAlpha = 1;
     }
     if (state.perfectFlash > 0) {
       ctx.globalAlpha = Math.min(1, state.perfectFlash);
-      text(ctx, 'SEMPURNA!', 640, 200, 34, '#ffd766');
+      text(ctx, 'SEMPURNA!', 640, 540, 34, '#ffd766');
       ctx.globalAlpha = 1;
     }
 
     // Controls hint.
     if (screen === SCREEN_PLAY) {
       text(ctx, 'A/D gerak  •  W/S ganti meja  •  E pakai stasiun  •  Klik stasiun untuk jalan ke sana  •  P jeda',
-        640, 700, 14, PALETTE.muted, 'center', '500');
+        640, 710, 14, '#f7f1e3', 'center', '500');
     }
 
     // Overlays.

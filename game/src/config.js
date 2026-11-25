@@ -15,8 +15,8 @@ export const CHEF = {
   height: 92,
   speed: 430,
   /** Feet y of the two counter lanes: the back lane stands a small step nearer the bins. */
-  laneBack: 596,
-  laneFront: 616,
+  laneBack: 640,
+  laneFront: 662,
 };
 
 /** How close (in x) the chef must be to use a station. */
@@ -45,19 +45,19 @@ export const LANE_FRONT = 'front';
  * hands a finished dish to the customer whose ticket matches it.
  */
 export const STATIONS = [
-  { id: 'bin-nasi', kind: KIND_BIN, lane: LANE_BACK, x: 140, y: 216, w: 104, h: 76, gives: 'nasi', label: 'NASI' },
-  { id: 'bin-mie', kind: KIND_BIN, lane: LANE_BACK, x: 300, y: 216, w: 104, h: 76, gives: 'mie', label: 'MIE' },
-  { id: 'bin-ayam', kind: KIND_BIN, lane: LANE_BACK, x: 460, y: 216, w: 104, h: 76, gives: 'ayam', label: 'AYAM' },
-  { id: 'bin-telur', kind: KIND_BIN, lane: LANE_BACK, x: 620, y: 216, w: 104, h: 76, gives: 'telur', label: 'TELUR' },
-  { id: 'bin-sayur', kind: KIND_BIN, lane: LANE_BACK, x: 780, y: 216, w: 104, h: 76, gives: 'sayur', label: 'SAYUR' },
-  { id: 'bin-bumbu', kind: KIND_BIN, lane: LANE_BACK, x: 940, y: 216, w: 104, h: 76, gives: 'bumbu', label: 'BUMBU' },
-  { id: 'serve', kind: KIND_SERVE, lane: LANE_BACK, x: 1130, y: 210, w: 120, h: 88, label: 'ANTAR' },
-  { id: 'chop', kind: KIND_CHOP, lane: LANE_FRONT, x: 150, y: 372, w: 150, h: 84, label: 'TALENAN' },
-  { id: 'wok', kind: KIND_WOK, lane: LANE_FRONT, x: 350, y: 372, w: 150, h: 84, label: 'WAJAN' },
-  { id: 'grill', kind: KIND_GRILL, lane: LANE_FRONT, x: 550, y: 372, w: 150, h: 84, label: 'PANGGANGAN' },
-  { id: 'plate', kind: KIND_PLATE, lane: LANE_FRONT, x: 760, y: 372, w: 220, h: 84, label: 'PIRING' },
-  { id: 'sink', kind: KIND_SINK, lane: LANE_FRONT, x: 980, y: 372, w: 120, h: 84, label: 'WASTAFEL' },
-  { id: 'trash', kind: KIND_TRASH, lane: LANE_FRONT, x: 1140, y: 372, w: 100, h: 84, label: 'SAMPAH' },
+  { id: 'bin-nasi', kind: KIND_BIN, lane: LANE_BACK, x: 140, y: 310, w: 104, h: 76, gives: 'nasi', label: 'NASI' },
+  { id: 'bin-mie', kind: KIND_BIN, lane: LANE_BACK, x: 300, y: 310, w: 104, h: 76, gives: 'mie', label: 'MIE' },
+  { id: 'bin-ayam', kind: KIND_BIN, lane: LANE_BACK, x: 460, y: 310, w: 104, h: 76, gives: 'ayam', label: 'AYAM' },
+  { id: 'bin-telur', kind: KIND_BIN, lane: LANE_BACK, x: 620, y: 310, w: 104, h: 76, gives: 'telur', label: 'TELUR' },
+  { id: 'bin-sayur', kind: KIND_BIN, lane: LANE_BACK, x: 780, y: 310, w: 104, h: 76, gives: 'sayur', label: 'SAYUR' },
+  { id: 'bin-bumbu', kind: KIND_BIN, lane: LANE_BACK, x: 940, y: 310, w: 104, h: 76, gives: 'bumbu', label: 'BUMBU' },
+  { id: 'serve', kind: KIND_SERVE, lane: LANE_BACK, x: 1130, y: 304, w: 120, h: 88, label: 'ANTAR' },
+  { id: 'chop', kind: KIND_CHOP, lane: LANE_FRONT, x: 150, y: 430, w: 150, h: 84, label: 'TALENAN' },
+  { id: 'wok', kind: KIND_WOK, lane: LANE_FRONT, x: 350, y: 430, w: 150, h: 84, label: 'WAJAN' },
+  { id: 'grill', kind: KIND_GRILL, lane: LANE_FRONT, x: 550, y: 430, w: 150, h: 84, label: 'PANGGANGAN' },
+  { id: 'plate', kind: KIND_PLATE, lane: LANE_FRONT, x: 760, y: 430, w: 220, h: 84, label: 'PIRING' },
+  { id: 'sink', kind: KIND_SINK, lane: LANE_FRONT, x: 980, y: 430, w: 120, h: 84, label: 'WASTAFEL' },
+  { id: 'trash', kind: KIND_TRASH, lane: LANE_FRONT, x: 1140, y: 430, w: 100, h: 84, label: 'SAMPAH' },
 ];
 
 /** Raw ingredients and the components they become. */

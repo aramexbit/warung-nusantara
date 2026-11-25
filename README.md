@@ -42,4 +42,6 @@ node serve.ts
 
 No build step, no dependencies, no network requests: `game/` is plain static files.
 `main.ts` (Node 22, standard library only) copies `game/` and `screenshots/` to
-`/output` and writes `dossier.json` for the make.fun judge.
+`/output` and writes `dossier.json` for the make.fun judge. The dining-room backdrop
+(`game/assets/warung-bg.jpg`) is an illustration made for this game; every counter,
+customer, station and food item is drawn by the game's own code.

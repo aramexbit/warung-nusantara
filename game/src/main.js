@@ -29,7 +29,11 @@ const seed = Number.isInteger(seedParam) ? seedParam : Math.floor(Math.random() 
 const canvas = document.getElementById('game');
 const status = document.getElementById('status');
 const world = createWorld(createRandom(seed));
-const renderer = createRenderer(canvas);
+// The dining-room backdrop (game/assets/warung-bg.jpg). The renderer draws a warm
+// gradient until it loads; a failed load keeps the gradient.
+const bg = new Image();
+bg.src = './assets/warung-bg.jpg';
+const renderer = createRenderer(canvas, bg);
 
 function readBest() {
   try {
@@ -90,14 +94,22 @@ function runShot(name) {
   let painted = 0;
   // The scene is painted twice (once to settle the canvas, once for the capture) and
   // only then is the page told the shot is ready; the probe waits for that flag before
-  // screenshotting, so a shot never catches a half-drawn frame.
+  // screenshotting, so a shot never catches a half-drawn frame. The backdrop is part
+  // of the shot: wait for it (or 3 s) before the first paint.
   function paint() {
     renderer.draw(world.state, scene.screen, scene.best, performance.now() / 1000);
     painted += 1;
     if (painted < 2) requestAnimationFrame(paint);
     else window.__shotReady = true;
   }
-  requestAnimationFrame(paint);
+  if (bg.complete) requestAnimationFrame(paint);
+  else {
+    let started = false;
+    const go = () => { if (!started) { started = true; requestAnimationFrame(paint); } };
+    bg.addEventListener('load', go, { once: true });
+    bg.addEventListener('error', go, { once: true });
+    setTimeout(go, 3000);
+  }
 }
 
 function runGame() {
