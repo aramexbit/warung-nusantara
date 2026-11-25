@@ -1,0 +1,5 @@
+# Local build output (main.ts writes the dossier here when MAKEFUN_OUTPUT_DIR is set).
+out/
+node_modules/
+*.log
+.DS_Store
